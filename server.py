@@ -1,5 +1,6 @@
 import socket
 import random 
+import threading
 
 HOST = "127.0.0.1"
 PORT = 8888
@@ -19,7 +20,6 @@ class NumberGuessingGame:
     def play_game(self, client):
         self.number = random.randint(1, 100)
         self.attempts = 0
-        print("Client connected:", client_address)
         while self.attempts < 10:
             guess = client.recv(1024).decode()
             print("Client {} says: {}".format(client.getpeername(), guess))
@@ -36,7 +36,12 @@ class NumberGuessingGame:
                 else:
                     client.send("Sorry, you have run out of attempts. The number was {}.".format(self.number).encode())
 
+    def handle_client(self, client_socket, client_address):
+        print("Client connected:", client_address)
+        self.play_game(client_socket)
+        client_socket.close()
+
 while True:
     client_socket, client_address = server_socket.accept()
     game = NumberGuessingGame()
-    game.play_game(client_socket)
+    threading.Thread(target=game.handle_client, args=(client_socket, client_address)).start()
